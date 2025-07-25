@@ -1,4 +1,3 @@
-import requests
 import json
 import time
 import urllib.request
@@ -10,26 +9,13 @@ import re
 # --- Config ---
 PROJECTS_API = "https://dorahacks.io/api/hackathon-buidls/wchl25-qualification-round/?page={}&page_size=10"
 HACKERS_API = "https://dorahacks.io/api/hackathon/wchl25-qualification-round/hackers/?page={}&page_size=10"
-session = requests.Session()
-session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-    "Accept": "*/*",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Accept-Encoding": "gzip, deflate, br, zstd",
-    "Referer": "https://dorahacks.io/hackathon/wchl25-qualification-round",
-    "Origin": "https://dorahacks.io",
-    "Connection": "keep-alive",
-    "Sec-Fetch-Site": "same-origin",
-    "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Dest": "empty",
-    "Sec-Ch-Ua": '"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"',
-    "Sec-Ch-Ua-Mobile": "?0",
-    "Sec-Ch-Ua-Platform": '"macOS"',
-    "Cookie": "_ga=GA1.1.1669956592.1752489679; cookie:accepted=true; _ga_P3DRZLFQ0Q=GS2.1.s1753469948$o31$g1$t1753469950$j58$l0$h0"
-})
-
-
-
+HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'Accept': 'application/json',
+    'Referer': 'https://dorahacks.io/',
+    'Origin': 'https://dorahacks.io',
+    'Accept-Language': 'en-US,en;q=0.9'
+}
 MAX_RETRIES = 5
 RETRY_DELAY = 2
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,39 +64,45 @@ def fetch_paginated_data(url_template, label="", cache_file=None, key_field="id"
     page = 1
     while True:
         url = url_template.format(page)
+        req = urllib.request.Request(url, headers=HEADERS)
 
         for attempt in range(MAX_RETRIES):
             try:
-                response = session.get(url, timeout=10)
+                with urllib.request.urlopen(req) as res:
+                    if res.status != 200:
+                        raise urllib.error.HTTPError(url, res.status, "Invalid status", res.headers, None)
 
-                if response.status_code != 200:
-                    raise Exception(f"HTTP {response.status_code}: {response.reason}")
+                    data = json.loads(res.read())
+                    results = data.get("results", data)
 
-                data = response.json()
-                results = data.get("results", data)
-
-                if not isinstance(results, list):
-                    print(f"⚠️ Unexpected format for {label} on page {page}: {type(results)}")
-                    return save_and_return(cache_file, new_data, old_data, label)
-
-                if not results:
-                    print(f"✅ No more {label} data after page {page}")
-                    return save_and_return(cache_file, new_data, old_data, label)
-
-                for item in results:
-                    item_id = item.get(key_field)
-                    if item_id in seen_ids:
-                        print(f"🛑 Duplicate {label} ID {item_id} found. Ending fetch.")
+                    if not isinstance(results, list):
+                        print(f"⚠️ Unexpected format for {label} on page {page}: {type(results)}")
                         return save_and_return(cache_file, new_data, old_data, label)
-                    new_data.append(item)
 
-                print(f"✅ {label} Page {page}: {len(results)} item(s) fetched")
-                page += 1
-                break  # success, move to next page
+                    if not results:
+                        print(f"✅ No more {label} data after page {page}")
+                        return save_and_return(cache_file, new_data, old_data, label)
 
-            except Exception as e:
-                print(f"❌ Error on {label} page {page}, attempt {attempt + 1}: {e}")
+                    for item in results:
+                        item_id = item.get(key_field)
+                        if item_id in seen_ids:
+                            print(f"🛑 Duplicate {label} ID {item_id} found. Ending fetch.")
+                            return save_and_return(cache_file, new_data, old_data, label)
+                        new_data.append(item)
+
+                    print(f"✅ {label} Page {page}: {len(results)} item(s) fetched")
+                    page += 1
+                    break
+
+            except (urllib.error.HTTPError, urllib.error.URLError) as e:
+                print(f"❌ Network error on {label} page {page}, attempt {attempt + 1}: {e}")
                 time.sleep(RETRY_DELAY)
+            except json.JSONDecodeError as e:
+                print(f"❌ Failed to parse JSON on {label} page {page}: {e}")
+                break
+            except Exception as e:
+                print(f"❌ Unexpected error on {label} page {page}: {e}")
+                break
         else:
             print(f"🚫 Failed to fetch {label} after {MAX_RETRIES} retries.")
             break
