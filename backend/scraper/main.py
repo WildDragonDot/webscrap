@@ -10,7 +10,8 @@ import re
 # --- Config ---
 PROJECTS_API = "https://dorahacks.io/api/hackathon-buidls/wchl25-qualification-round/?page={}&page_size=10"
 HACKERS_API = "https://dorahacks.io/api/hackathon/wchl25-qualification-round/hackers/?page={}&page_size=10"
-HEADERS = {
+session = requests.Session()
+session.headers.update({
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
     "Referer": "https://dorahacks.io/",
@@ -20,7 +21,7 @@ HEADERS = {
     "Sec-Fetch-Site": "same-origin",
     "Sec-Fetch-Mode": "cors",
     "Sec-Fetch-Dest": "empty"
-}
+})
 MAX_RETRIES = 5
 RETRY_DELAY = 2
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -72,7 +73,7 @@ def fetch_paginated_data(url_template, label="", cache_file=None, key_field="id"
 
         for attempt in range(MAX_RETRIES):
             try:
-                response = requests.get(url, headers=HEADERS, timeout=10)
+                response = session.get(url, timeout=10)
 
                 if response.status_code != 200:
                     raise Exception(f"HTTP {response.status_code}: {response.reason}")
