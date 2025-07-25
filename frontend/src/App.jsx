@@ -13,7 +13,7 @@ function App() {
     setLoading(true);
     setError("");
 
-    fetch("http://localhost:5001/api/projects")
+    fetch("https://api.dorascrapper.quadbtech.com/api/projects")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch");
         return res.json();
@@ -37,7 +37,7 @@ function App() {
     setProjects([]);
     setLoading(false);
 
-    const eventSource = new EventSource("http://localhost:5001/api/scrape");
+    const eventSource = new EventSource("https://api.dorascrapper.quadbtech.com/api/scrape");
 
     eventSource.onmessage = (event) => {
       setLogs((prev) => [...prev, event.data]);
@@ -59,7 +59,7 @@ function App() {
   };
 
   const handleDownload = () => {
-    window.open("http://localhost:5001/api/download", "_blank");
+    window.open("https://api.dorascrapper.quadbtech.com/api/download", "_blank");
   };
 
   const filteredProjects = projects.filter((project) => {
