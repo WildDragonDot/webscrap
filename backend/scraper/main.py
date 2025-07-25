@@ -10,12 +10,15 @@ import re
 PROJECTS_API = "https://dorahacks.io/api/hackathon-buidls/wchl25-qualification-round/?page={}&page_size=10"
 HACKERS_API = "https://dorahacks.io/api/hackathon/wchl25-qualification-round/hackers/?page={}&page_size=10"
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-    'Accept': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Accept-Language': 'en-US,en;q=0.9',
     'Referer': 'https://dorahacks.io/',
     'Origin': 'https://dorahacks.io',
-    'Accept-Language': 'en-US,en;q=0.9'
+    'Connection': 'keep-alive',
 }
+
 MAX_RETRIES = 5
 RETRY_DELAY = 2
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
