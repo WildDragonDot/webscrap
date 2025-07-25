@@ -1,3 +1,4 @@
+import requests
 import json
 import time
 import urllib.request
@@ -10,15 +11,12 @@ import re
 PROJECTS_API = "https://dorahacks.io/api/hackathon-buidls/wchl25-qualification-round/?page={}&page_size=10"
 HACKERS_API = "https://dorahacks.io/api/hackathon/wchl25-qualification-round/hackers/?page={}&page_size=10"
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    'Accept-Encoding': 'gzip, deflate, br',
-    'Accept-Language': 'en-US,en;q=0.9',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'Accept': 'application/json',
     'Referer': 'https://dorahacks.io/',
     'Origin': 'https://dorahacks.io',
-    'Connection': 'keep-alive',
+    'Accept-Language': 'en-US,en;q=0.9'
 }
-
 MAX_RETRIES = 5
 RETRY_DELAY = 2
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,45 +65,39 @@ def fetch_paginated_data(url_template, label="", cache_file=None, key_field="id"
     page = 1
     while True:
         url = url_template.format(page)
-        req = urllib.request.Request(url, headers=HEADERS)
 
         for attempt in range(MAX_RETRIES):
             try:
-                with urllib.request.urlopen(req) as res:
-                    if res.status != 200:
-                        raise urllib.error.HTTPError(url, res.status, "Invalid status", res.headers, None)
+                response = requests.get(url, headers=HEADERS, timeout=10)
 
-                    data = json.loads(res.read())
-                    results = data.get("results", data)
+                if response.status_code != 200:
+                    raise Exception(f"HTTP {response.status_code}: {response.reason}")
 
-                    if not isinstance(results, list):
-                        print(f"⚠️ Unexpected format for {label} on page {page}: {type(results)}")
+                data = response.json()
+                results = data.get("results", data)
+
+                if not isinstance(results, list):
+                    print(f"⚠️ Unexpected format for {label} on page {page}: {type(results)}")
+                    return save_and_return(cache_file, new_data, old_data, label)
+
+                if not results:
+                    print(f"✅ No more {label} data after page {page}")
+                    return save_and_return(cache_file, new_data, old_data, label)
+
+                for item in results:
+                    item_id = item.get(key_field)
+                    if item_id in seen_ids:
+                        print(f"🛑 Duplicate {label} ID {item_id} found. Ending fetch.")
                         return save_and_return(cache_file, new_data, old_data, label)
+                    new_data.append(item)
 
-                    if not results:
-                        print(f"✅ No more {label} data after page {page}")
-                        return save_and_return(cache_file, new_data, old_data, label)
+                print(f"✅ {label} Page {page}: {len(results)} item(s) fetched")
+                page += 1
+                break  # success, move to next page
 
-                    for item in results:
-                        item_id = item.get(key_field)
-                        if item_id in seen_ids:
-                            print(f"🛑 Duplicate {label} ID {item_id} found. Ending fetch.")
-                            return save_and_return(cache_file, new_data, old_data, label)
-                        new_data.append(item)
-
-                    print(f"✅ {label} Page {page}: {len(results)} item(s) fetched")
-                    page += 1
-                    break
-
-            except (urllib.error.HTTPError, urllib.error.URLError) as e:
-                print(f"❌ Network error on {label} page {page}, attempt {attempt + 1}: {e}")
-                time.sleep(RETRY_DELAY)
-            except json.JSONDecodeError as e:
-                print(f"❌ Failed to parse JSON on {label} page {page}: {e}")
-                break
             except Exception as e:
-                print(f"❌ Unexpected error on {label} page {page}: {e}")
-                break
+                print(f"❌ Error on {label} page {page}, attempt {attempt + 1}: {e}")
+                time.sleep(RETRY_DELAY)
         else:
             print(f"🚫 Failed to fetch {label} after {MAX_RETRIES} retries.")
             break
