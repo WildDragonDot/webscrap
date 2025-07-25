@@ -12,7 +12,7 @@ PROJECTS_API = "https://dorahacks.io/api/hackathon-buidls/wchl25-qualification-r
 HACKERS_API = "https://dorahacks.io/api/hackathon/wchl25-qualification-round/hackers/?page={}&page_size=10"
 session = requests.Session()
 session.headers.update({
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
     "Accept": "application/json, text/plain, */*",
     "Referer": "https://dorahacks.io/",
     "Origin": "https://dorahacks.io",
@@ -20,8 +20,10 @@ session.headers.update({
     "Connection": "keep-alive",
     "Sec-Fetch-Site": "same-origin",
     "Sec-Fetch-Mode": "cors",
-    "Sec-Fetch-Dest": "empty"
+    "Sec-Fetch-Dest": "empty",
+    "Cookie": "_ga=GA1.1.1669956592.1752489679; cookie:accepted=true; _ga_P3DRZLFQ0Q=GS2.1.s1753469948$o31$g1$t1753469950$j58$l0$h0"
 })
+
 MAX_RETRIES = 5
 RETRY_DELAY = 2
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
